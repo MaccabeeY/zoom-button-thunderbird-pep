@@ -9,7 +9,6 @@
  * we can rely on synchronous global tracking variables for extreme responsiveness.
  * State updates are instantly saved to storage, but calculations bypass async lag.
  */
- */
 
 /* ==========================================================================
    1. GLOBAL IN-MEMORY PERSISTENT TRACKING STATES
