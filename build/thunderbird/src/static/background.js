@@ -3,11 +3,18 @@
  * ZOOM BUTTON FOR THUNDERBIRD (REDUX+) - CORE RUNTIME WORKER
  * ============================================================================
  * Architecture: Manifest V2 Persistent Background Page
+ *
+ * DESIGN STRATEGY:
+ * Because Manifest V2 scripts run persistently in the background memory space,
+ * we can rely on synchronous global tracking variables for extreme responsiveness.
+ * State updates are instantly saved to storage, but calculations bypass async lag.
  */
 
-// Persistent in-memory variables tracking application state across active execution threads
+/* ==========================================================================
+   1. GLOBAL IN-MEMORY PERSISTENT TRACKING STATES
+   ========================================================================== */
 let zoomTracker = 1.0;            // Live scale factor cache (e.g., 1.0 = 100%, 1.2 = 120%) to prevent async storage lookups
-let absoluteCeilingLimit = 5.0;   // The maximum allowable magnification ceiling, bounded dynamically by system configs
+let absoluteCeilingLimit = 5.0;   // The maximum allowable magnification preventing text elements from enlarging beyond
 let absoluteFloorLimit = 0.3;     // The minimum allowable scaling floor, preventing text elements from shrinking to zero
 let zoomIncrementStep = 0.10;     // Fractional delta value added to or subtracted from zoomTracker during shift increments
 let isGestureEnabled = true;      // Master logic gate toggling tracking for right-click + wheel chord inputs
@@ -60,15 +67,20 @@ function loadSavedAddonSettings() {
   });
 }
 
-/**
- * Normalizes system configuration profiles down to floating-point mathematical boundaries.
- */
+/* ==========================================================================
+   2. SYSTEM PREFERENCES
+   ========================================================================== */
+
 async function fetchTrueSystemPreferences() {
   let rawMax = 500;
   let rawMin = 30;
   absoluteCeilingLimit = rawMax / 100;
   absoluteFloorLimit = rawMin / 100;
 }
+
+/* ==========================================================================
+   3. UI & GRAPHICS ORCHESTRATION (MV2 COMPLIANT)
+   ========================================================================== */
 
 /**
  * Direct UI state synchronizer. Manages toolbar badges, tooltips, and file assets.
@@ -89,6 +101,11 @@ function updateButtonUI(level) {
     action.setIcon({ path: activeIconPath }).catch((err) => console.error("Icon render shift failure:", err));
   }
 }
+
+/* ==========================================================================
+   4. CONTENT SCRIPT GESTURE ENGINE (INJECTED SANDBOX FRAME)
+   ========================================================================== */
+
 
 // Deprecated injection string payload preserved strictly to retain fallback operational pathways
 const gestureContentScriptCode = `
@@ -204,6 +221,20 @@ messenger.windows.onCreated.addListener((newWindow) => {
   }
 });
 
+/* ==========================================================================
+   5. EXECUTION & CSS INJECTION ENGINE (MV2 SAFE EXECUTION)
+   ========================================================================== */
+
+/**
+ * Injects CSS zoom transformations using secure script block strings.
+ * MV2 Specific: Uses the cleaner, legacy tabs.executeScript environment layout.
+ * @param {number} currentZoomValue - Calculated scaling coefficient.
+ */
+/**
+ * Injects CSS zoom transformations securely.
+ * Secure Compliance Update: Eliminates dynamic string interpolation to pass extension validation checks.
+ * @param {number} currentZoomValue - Calculated scaling coefficient.
+ */
 /**
  * Executes a functional programmatic matrix calculation inside target view layouts.
  * @param {number} currentZoomValue - The floating point multiplier intended for execution.
@@ -230,6 +261,10 @@ async function applyZoomToContext(currentZoomValue) {
     }).catch(() => {});
   }
 }
+
+/* ==========================================================================
+   6. CENTRAL TASK ROUTER & SIGNAL INTERCEPTOR
+   ========================================================================== */
 
 /**
  * Central state logic router. Captures navigation instructions and executes variable arithmetic.
@@ -273,6 +308,10 @@ async function runZoomChangeTask(action, sender, sendResponse) {
   if (sendResponse) sendResponse({ currentZoom: zoomTracker });
 }
 
+/* ==========================================================================
+   7. SEQUENTIAL ASYNC QUEUE CONTROLLER
+   ========================================================================== */
+
 /**
  * Pipelined storage command queue ensuring database mutations execute sequentially.
  */
@@ -311,6 +350,10 @@ class StorageTaskQueue {
 
 const storageQueue = new StorageTaskQueue();
 
+/* ==========================================================================
+   8. SECURE RUNTIME PIPELINE INTERCEPTOR
+   ========================================================================== */
+
 // Primary interface router capturing and dispersing incoming inter-process network signals
 messenger.runtime.onMessage.addListener((message, sender, sendResponse) => {
   if (message.action === "get-zoom") {
@@ -325,6 +368,10 @@ messenger.runtime.onMessage.addListener((message, sender, sendResponse) => {
 });
 
 loadSavedAddonSettings();
+
+/* ==========================================================================
+   9. COLD BOOT APPLICATION SEED ENGINE
+   ========================================================================== */
 
 // Registers installation lifecycle triggers to seed storage partitions on initial deployments
 messenger.runtime.onInstalled.addListener((details) => {
